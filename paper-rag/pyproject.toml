@@ -1,0 +1,52 @@
+# paper-rag 실습 환경 (Python 3.14 / uv)
+#
+# 설치:  paper-rag/ 폴더에 이 파일과 uv.lock, .python-version 을 두고  `uv sync --locked`
+#        (Python 3.14 가 없으면 uv 가 자동으로 내려받음. .venv 도 자동 생성)
+# 실행:  uv run python ingest.py   처럼 모든 명령 앞에 uv run 을 붙임
+#
+# 주의: uv sync 는 아래 파이썬 패키지만 받습니다.
+#       모델 파일(필수 두 개 합계 약 2.7GB)은 허깅페이스 캐시(~/.cache/huggingface)에
+#       별도로 저장되며, 처음 쓰는 시점(2강·3강)에 자동 다운로드됩니다.
+#       강의장 네트워크 정체를 피하려면 집에서 아래를 미리 실행해 두십시오.
+#       (uv sync 만 하면 hf 명령을 바로 쓸 수 있습니다. 끊기면 같은 명령 재실행 = 이어받기)
+#
+#   uv run hf download intfloat/multilingual-e5-small   약 0.5GB   2강 임베딩(기본), 3~4강 질의 임베딩
+#   uv run hf download BAAI/bge-reranker-v2-m3          약 2.2GB   3~4강 리랭커
+#
+#       [선택] 2강에서 더 큰 임베딩 모델과 품질을 비교해 보려면 (실습 필수 아님)
+#   uv run hf download BAAI/bge-m3                      약 2.2GB   index.py --model BAAI/bge-m3 로만 사용
+#
+#       받은 뒤 로드 확인:
+#   uv run python -c "from sentence_transformers import SentenceTransformer, CrossEncoder; SentenceTransformer('intfloat/multilingual-e5-small'); CrossEncoder('BAAI/bge-reranker-v2-m3'); print('MODELS CACHED')"
+
+[project]
+name = "paper-rag"
+version = "0.1.0"
+description = "RAG 첫 구축과 내부 동작 이해 - 실습 프로젝트"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "pymupdf>=1.26",              # 2강: PDF 파싱
+    "numpy>=2.3",                 # 2강: embeddings.npy
+    "sentence-transformers>=5.0", # 2~3강: 임베딩 모델 + 크로스 인코더 리랭커
+    "torch>=2.9",                 # sentence-transformers 백엔드 (2.9부터 Python 3.14 지원)
+    "rank-bm25>=0.2.2",           # 3강: BM25 (하이브리드 검색)
+    "langgraph>=0.6",             # 4강: LangGraph 이식 시연
+    "chromadb>=1.0",              # 6강: 벡터 DB 이관
+]
+
+[tool.uv]
+package = false   # 이 폴더는 라이브러리가 아니라 스크립트 모음. 자기 자신을 설치하지 않음
+
+# ------------------------------------------------------------------
+# [선택] Linux + GPU 없음:
+# PyPI 기본 torch 는 리눅스에서 CUDA 라이브러리(수 GB)를 함께 받습니다.
+# CPU 전용으로 줄이려면 아래 주석을 해제하고 `uv lock` 을 다시 실행하십시오.
+# Windows / macOS 는 기본 휠이 이미 CPU(MPS) 빌드라 필요 없습니다.
+# ------------------------------------------------------------------
+# [[tool.uv.index]]
+# name = "pytorch-cpu"
+# url = "https://download.pytorch.org/whl/cpu"
+# explicit = true
+#
+# [tool.uv.sources]
+# torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
